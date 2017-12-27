@@ -1,0 +1,8 @@
+#!/bin/bash
+i=0
+until ping -c1 -w 1 8.8.8.8 > /dev/null 2>&1; do
+	sleep 0.5
+	((i++))
+	echo -en "\e[0K\rNetwork is down: attempt $i"
+done
+echo -e "\e[0K\rNetwork is up after $i attempts"

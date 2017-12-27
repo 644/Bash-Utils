@@ -1,0 +1,128 @@
+function http_domain() {
+	curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/create_domain --data "domain=$domain" --data "serverip=IP"
+	curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/records?domain="$domain" | jq '.[].RECORDID' | while read recordid; do curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/update_record --data "domain=$domain" --data "RECORDID=$recordid" --data "ttl=120"; done
+	mkdir "/var/www/$domain"
+	echo "server {
+		listen 80;
+		listen [::]:80;
+		root /var/www/$domain;
+		index index.php index.html index.htm index.nginx-debian.html;
+		location ~ \.php$ {
+			include snippets/fastcgi-php.conf;
+			fastcgi_pass unix:/run/php/php7.0-fpm.sock;
+		}
+		server_name $domain;
+		server_name www.$domain;
+		access_log /var/log/$domain.log;
+		error_log /var/log/$domain.error.log;
+	}" > "/etc/nginx/sites-enabled/$domain"
+	echo "hello world" > "/var/www/$domain/index.html"
+	service nginx restart
+}
+function https_domain() {
+	curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/create_domain --data "domain=$domain" --data "serverip=IP"
+	curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/records?domain="$domain" | jq '.[].RECORDID' | while read recordid; do curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/update_record --data "domain=$domain" --data "RECORDID=$recordid" --data "ttl=120"; done
+	mkdir "/var/www/$domain"
+	echo "server {
+		listen 80;
+		listen [::]:80;
+		server_name $domain;
+		root /var/www/$domain;
+		include /etc/nginx/snippets/letsencrypt.conf;
+		location / {
+			index index.html;
+		}
+	}
+	server {
+		listen 80;
+		listen [::]:80;
+		server_name www.$domain;
+		root /var/www/$domain;
+		include /etc/nginx/snippets/letsencrypt.conf;
+		location / {
+			index index.html;
+		}
+	}" > "/etc/nginx/sites-enabled/$domain"
+	service nginx restart
+	while :; do
+		sleep 10
+		certbot certonly --dry-run --nginx -d "$domain" -d "www.$domain" | tee /tmp/certbot.log
+		if grep -q "The dry run was successful." /tmp/certbot.log; then
+			sleep 10
+			certbot certonly --nginx -d "$domain" -d "www.$domain"
+			break
+		fi
+	done
+	mkdir -p ~/keys/
+	openssl req -nodes -sha256 -newkey rsa:4096 -keyout ~/keys/"$domain".rsa.key -out ~/keys/"$domain".rsa.csr -subj "/C=GB/ST=London/L=London/O=Global Security/OU=Secret Service/CN=$domain" >> ~/keys/pins.txt
+	openssl req -nodes -newkey ec:<(openssl ecparam -name prime256v1) -keyout ~/keys/"$domain.ec.key" -out ~/keys/"$domain.ec.csr" -subj "/C=GB/ST=London/L=London/O=Global Security/OU=Secret Service/CN=$domain" >> ~/keys/pins.txt
+	openssl req -pubkey < ~/keys/"$domain".rsa.csr | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64 >> ~/keys/pins.txt
+	openssl req -pubkey < ~/keys/"$domain".ec.csr | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64 >> ~/keys/pins.txt
+	curl -s https://letsencrypt.org/certs/lets-encrypt-x4-cross-signed.pem | openssl x509 -pubkey | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64 >> ~/keys/pins.txt
+	curl -s https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem | openssl x509 -pubkey | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64 >> ~/keys/pins.txt
+	curl -s https://letsencrypt.org/certs/isrgrootx1.pem | openssl x509 -pubkey | openssl pkey -pubin -outform der | openssl dgst -sha256 -binary | base64 >> ~/keys/pins.txt
+	pins=$(echo "add_header Public-Key-Pins 'pin-sha256=\"$(sed -n 1p ~/keys/pins.txt)\"; pin-sha256=\"$(sed -n 2p ~/keys/pins.txt)\"; pin-sha256=\"$(sed -n 3p ~/keys/pins.txt)\"; pin-sha256=\"$(sed -n 4p ~/keys/pins.txt)\"; pin-sha256=\"$(sed -n 5p ~/keys/pins.txt)\"; max-age=5184000;';")
+	echo "server {
+		listen 80;
+		listen [::]:80;
+		server_name $domain;
+		root /var/www/$domain;
+		include /etc/nginx/snippets/letsencrypt.conf;
+		location / {
+			return 301 https://$domain\$request_uri;
+		}
+	}
+	server {
+		listen 80;
+		listen [::]:80;
+		server_name www.$domain;
+		root /var/www/$domain;
+		include /etc/nginx/snippets/letsencrypt.conf;
+		location / {
+			return 301 https://www.$domain\$request_uri;
+		}
+	}
+	server {
+		listen 443 ssl http2;
+		listen [::]:443 ssl http2;
+		ssl_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
+		ssl_certificate_key /etc/letsencrypt/live/$domain/privkey.pem;
+		ssl_trusted_certificate /etc/letsencrypt/live/$domain/fullchain.pem;
+		include /etc/nginx/snippets/ssl.conf;
+		root /var/www/$domain;
+		index index.php index.html index.htm index.nginx-debian.html;
+		$pins
+		add_header X-XSS-Protection \"1; mode=block\";
+		add_header Content-Security-Policy \"default-src 'self'; script-src 'self';\";
+		add_header Referrer-Policy \"no-referrer\";
+		add_header X-Frame-Options \"SAMEORIGIN\" always;
+		location ~ \.php$ {
+			include snippets/fastcgi-php.conf;
+			fastcgi_pass unix:/run/php/php7.0-fpm.sock;
+		}
+		server_name $domain;
+		server_name www.$domain;
+		access_log /var/log/$domain.log;
+		error_log /var/log/$domain.error.log;
+	}" > "/etc/nginx/sites-enabled/$domain"
+	echo "hello world" > "/var/www/$domain/index.html"
+	service nginx restart
+}
+hflag=false
+sflag=false
+domain=
+while getopts 'hsd:' flag; do
+	case "${flag}" in
+		h) hflag=true ;;
+		s) sflag=true ;;
+		d) domain="${OPTARG}" ;;
+		*) error "Unexpected option ${flag}" ;;
+	esac
+done
+if [[ -z "$domain" ]] || "$hflag" && "$sflag" || ! "$hflag" && ! "$sflag"; then
+        exit 1
+elif "$hflag"; then
+	http_domain
+elif "$sflag"; then
+	https_domain
+fi
