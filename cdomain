@@ -1,3 +1,4 @@
+#!/bin/bash
 function http_domain() {
 	curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/create_domain --data "domain=$domain" --data "serverip=IP"
 	curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/records?domain="$domain" | jq '.[].RECORDID' | while read recordid; do curl -s -H "API-Key: KEY" https://api.vultr.com/v1/dns/update_record --data "domain=$domain" --data "RECORDID=$recordid" --data "ttl=120"; done
