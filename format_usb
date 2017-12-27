@@ -1,22 +1,22 @@
 #!/bin/bash
-if [[ "$EUID" -ne 0 ]]; then
+hflag=false
+wflag=false
+if [[ $EUID -ne 0 ]]; then
 	echo "This scrip must be run as root"
         exit 1
 fi
-hflag=false
-wflag=false
 function help_user() {
         clear
         echo -e "$(basename "$0") [-h] [-w] - Quick USB formatting tool\n"
         echo "SCRIPT USAGE:"
         echo -e "\t-h\tDisplay this help message"
         echo -e "\t-w\tDestroy all data on USB before formatting (uses shred -vzn3 and will take a while)"
-        exit 1
+        exit 0
 }
 while getopts "hw" flag; do
         case "${flag}" in
                 h)
-                        hflag=true
+			help_user
                         ;;
                 w)
                         wflag=true
@@ -26,11 +26,8 @@ while getopts "hw" flag; do
                         ;;
         esac
 done
-if "${hflag}"; then
-    help_user
-fi
 usb_list="$(for devlink in /dev/disk/by-id/usb*; do readlink -f "${devlink}"; done | awk '!/[0-9]/')"
-if [[ "$usb_list" = "/dev/disk/by-id/usb*" ]]; then
+if [[ $usb_list == "/dev/disk/by-id/usb*" ]]; then
 	echo "No USBs discovered. Try running dmesg"
 	exit 1
 fi
@@ -40,16 +37,16 @@ for (( i = 0; i < ${#usb_list[@]}; i++ )); do
 done
 echo -en "\nType number and hit [ENTER]: "
 read usb_choice
-if [[ ! "${usb_choice}" > "$i" ]]; then
+if [[ ! ${usb_choice} > $i ]]; then
 	usb="${usb_list[usb_choice]}"
 	umount -l "${usb}"*
 	wipefs "${usb}"*
-	dd if=/dev/zero of="$usb" bs=512 count=1
+	dd if=/dev/zero of="${usb}" bs=512 count=1
 	if "${wflag}"; then
 		echo -e "\nShredding USB now. Grab a coffee\n"
 		shred -vzn3 "${usb}"
 	fi
-	printf "o\nn\np\n1\n\n\nw\n" | fdisk "$usb"
+	printf "o\nn\np\n1\n\n\nw\n" | fdisk "${usb}"
 	mkfs.vfat -F 32 "${usb}"1
 	exit 0
 else
