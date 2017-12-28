@@ -1,0 +1,130 @@
+#!/bin/bash
+if [[ $EUID -ne 0 ]]; then
+	echo "This script must be run with root privileges."
+	exit 1
+fi
+function last_interface() {
+	tput reset
+	printf "Select wireless adapter and hit [ENTER]\n"
+	((selected_interface--))
+	if [[ $selected_interface -lt 0 ]]; then
+		selected_interface=$((interface_length - 1))
+	fi
+	for ((i = 0; i < interface_length; i++)); do
+		if [[ $i == $selected_interface ]]; then
+			printf "\033[38;5;3m\033[48;5;4m${interface_list[selected_interface]}\033[00m\n"
+		else
+			printf "${interface_list[i]}\n"
+		fi
+	done
+}
+function next_interface() {
+	tput reset
+	printf "Select wireless adapter and hit [ENTER]\n"
+	((selected_interface++))
+	if [[ $selected_interface -gt $((interface_length - 1)) ]]; then
+		selected_interface=0
+	fi
+	for ((i = 0; i < interface_length; i++)); do
+		if [[ $i == $selected_interface ]]; then
+			printf "\033[38;5;3m\033[48;5;4m${interface_list[selected_interface]}\033[00m\n"
+		else
+			printf "${interface_list[i]}\n"
+		fi
+	done
+}
+function last_network() {
+	tput reset
+	printf "Select network and hit [ENTER]\n"
+	((selected_network--))
+	if [[ $selected_network -lt 0 ]]; then
+		selected_network=$((network_length - 1))
+	fi
+	for ((i = 0; i < network_length; i++)); do
+		if [[ $i == $selected_network ]]; then
+			printf "\033[38;5;3m\033[48;5;4m${network_list[selected_network]}\033[00m\n"
+		else
+			printf "${network_list[i]}\n"
+		fi
+	done
+}
+function next_network() {
+	tput reset
+	printf "Select network and hit [ENTER]\n"
+	((selected_network++))
+	if [[ $selected_network -gt $((network_length - 1)) ]]; then
+		selected_network=0
+	fi
+	for ((i = 0; i < network_length; i++)); do
+		if [[ $i == $selected_network ]]; then
+			printf "\033[38;5;3m\033[48;5;4m${network_list[selected_network]}\033[00m\n"
+		else
+			printf "${network_list[i]}\n"
+		fi
+	done
+}
+OLDIFS="${IFS}"
+interface_list=($(ls /sys/class/net | grep -Ev 'lo|eth|enp|veth|ppp|tun'))
+selected_interface=-1
+interface_length=${#interface_list[@]}
+IFS=
+next_interface
+while :; do
+	read -rsn1 key_pressed
+	case "${key_pressed}" in
+		A) 
+			last_interface 
+			;;
+		B) 
+			next_interface
+			;;
+		"") 
+			break
+			;;
+	esac
+done
+IFS="${OLDIFS}"
+until unfiltered_networks="$(iw dev "${interface_list[selected_interface]}" scan)"; do
+	tput reset
+	((scan_attempts++))
+	echo "Rescanning... (Attempt ${scan_attempts})"
+	sleep 1
+done
+network_list=($(awk '/SSID/{print $2}' <<< "${unfiltered_networks}"))
+selected_network=-1
+network_length=${#network_list[@]}
+IFS=
+next_network
+while :; do
+	read -rsn1 key_pressed
+	case "${key_pressed}" in
+		A) 
+			last_network 
+			;;
+		B) 
+			next_network
+			;;
+		"") 
+			break
+			;;
+	esac
+done
+IFS="${OLDIFS}"
+tput reset
+if [[ ! -f /etc/"${network_list[selected_network]}.conf" ]]; then
+	echo -en "\nType the PSK for ${network_list[selected_network]} and hit [ENTER]: "
+	read -r psk
+	wpa_passphrase "${network_list[selected_network]}" "${psk}" > /etc/"${network_list[selected_network]}".conf
+else
+	echo "Reusing old config file for ${network_list[selected_network]}"
+fi
+echo -en "\n\nType the network namespace name you wish to use and hit [ENTER]: "
+read -r namespace_name
+echo -e "That's all we need. Setting up the network namespace\n"
+phy_interface="$(iw "${interface_list[selected_interface]}" info | awk '/wiphy/{print $2}')"
+ip netns add "${namespace_name}"
+iw phy phy"${phy_interface}" set netns name "${namespace_name}"
+ip netns exec "${namespace_name}" wpa_supplicant -B -D wext -i "${interface_list[selected_interface]}" -c /etc/"${network_list[selected_network]}".conf
+echo -e "\nConnected, but dhclient can take up to 1 minute to configure everything.\n"
+ip netns exec "${namespace_name}" dhclient "${interface_list[selected_interface]}"
+echo -e "\nDone. To run commands from the ${namespace_name} namespace type \"sudo ip netns exec ${namespace_name} bash\""
