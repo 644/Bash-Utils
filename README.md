@@ -4,13 +4,13 @@ Below you will find a description, example and dependency list for all scripts i
 ## cdomain
 Adds domain to vultr instance and optionally sets proper security headers. The DNS must be pointed towards your vultr instance beforehand.
 
-####### Dependencies
+##### Dependencies
 - nginx
 - jq
 - certbot
 - vultr.com instance
 
-####### Usage
+##### Usage
 ```
 # cdomain -s -d mywebsite.com
 ```
@@ -19,21 +19,21 @@ Run with root priveleges.
 ## dlm
 Downloads music from YouTube using youtube-dl and sends the file directly to your phone using kdeconnect. Works best with a hotkey.
 
-####### Dependencies
+##### Dependencies
 - youtube-dl
 - kdeconnect
 - notify-send
 
-####### Usage
+##### Usage
 Select YouTube URL and run the script.
 
 ## format_usb
 Quickly formats a USB and adds an ext4 partition. Optionally, the device can be shredded to securely erase data.
 
-####### Dependencies
+##### Dependencies
 - shred
 
-####### Usage
+##### Usage
 ```
 # format_usb -w
 ```
@@ -42,33 +42,33 @@ Run with root priveleges.
 ## network_namespace
 Automatically creates WiFi-based network namespaces. This is not for ethernet devices.
 
-####### Dependencies
+##### Dependencies
 - iw
 - iproute2
 - netctl
 - wpa_supplicant
 - wpa_passphrase
 
-####### Usage
+##### Usage
 This script takes no arguments.
 Run with root priveleges.
 
 ## network_test
 Continuously retry pinging 8.8.8.8 until a packet is received.
 
-####### Dependencies
+##### Dependencies
 - ping
 
-####### Usage
+##### Usage
 This script takes no arguments.
 
 ## word_count
 Count the amount of lines, characters and words in selected text. Works best with a hotkey.
 
-####### Dependencies
+##### Dependencies
 - XFCE OR Gnome OR Cinnamon OR KDE
 - xsel
 - notify-send
 
-####### Usage
+##### Usage
 Select text and run the script.
