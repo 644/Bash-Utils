@@ -14,7 +14,7 @@ Adds domain to vultr instance and optionally sets proper security headers. The D
 ```
 # cdomain -s -d mywebsite.com
 ```
-Run with root priveleges.
+Run with root privileges.
 
 ## dlm
 Downloads music from YouTube using youtube-dl and sends the file directly to your phone using kdeconnect. Works best with a hotkey.
@@ -37,7 +37,7 @@ Quickly formats a USB and adds an ext4 partition. Optionally, the device can be 
 ```
 # format_usb -w
 ```
-Run with root priveleges.
+Run with root privileges.
 
 ## network_namespace
 Automatically creates WiFi-based network namespaces. This is not for ethernet devices.
@@ -51,7 +51,7 @@ Automatically creates WiFi-based network namespaces. This is not for ethernet de
 
 ##### Usage
 This script takes no arguments.
-Run with root priveleges.
+Run with root privileges.
 
 ## network_test
 Continuously retry pinging 8.8.8.8 until a packet is received.
