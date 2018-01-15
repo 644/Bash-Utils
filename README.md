@@ -1,6 +1,17 @@
 # Bash Utils
 Below you will find a description, example and dependency list for all scripts in this repository.
 
+## btt
+Converts selected binary text to ascii and displays with notify-send.
+
+##### Dependencies
+- XFCE OR Gnome OR Cinnamon OR KDE
+- xsel
+- notify-send
+
+##### Usage
+Select binary text and run the script. It's best suited to a hotkey.
+
 ## cdomain
 Adds domain to vultr instance and optionally sets proper security headers. The DNS must be pointed towards your vultr instance beforehand.
 
