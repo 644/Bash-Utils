@@ -8,6 +8,7 @@ Converts selected binary text to ascii and displays with notify-send.
 - XFCE OR Gnome OR Cinnamon OR KDE
 - xsel
 - notify-send
+- set_display_preferences
 
 ##### Usage
 Select binary text and run the script. It's best suited to a hotkey.
@@ -81,6 +82,7 @@ Count the amount of lines, characters and words in selected text. Works best wit
 - XFCE OR Gnome OR Cinnamon OR KDE
 - xsel
 - notify-send
+- set_display_preferences
 
 ##### Usage
 Select text and run the script.
