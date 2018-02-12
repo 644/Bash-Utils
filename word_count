@@ -1,7 +1,5 @@
 #!/bin/bash
-env_reference_process="$(pgrep -u $USER xfce4-session || pgrep -u $USER ciannamon-session || pgrep -u $USER gnome-session || pgrep -u $USER gnome-shell || pgrep -u $USER kdeinit)"
-export DBUS_SESSION_BUS_ADDRESS="$(cat /proc/"${env_reference_process}"/environ | grep -z ^DBUS_SESSION_BUS_ADDRESS= | sed s/DBUS_SESSION_BUS_ADDRESS=//)"
-export DISPLAY="$(cat /proc/"${env_reference_process}"/environ | grep -z ^DISPLAY= | sed s/DISPLAY=//)"
+set_display_preferences
 words="$(xsel -o | wc -w)"
 characters="$(xsel -o | wc -m)"
 lines="$(xsel -o | wc -l)"
