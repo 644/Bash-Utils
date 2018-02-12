@@ -1,0 +1,6 @@
+#!/bin/bash
+env_pid="$(pgrep -u "${USER}" xfce4-session || pgrep -u "${USER}" ciannamon-session || pgrep -u "${USER}" gnome-session || pgrep -u "${USER}" gnome-shell || pgrep -u "${USER}" kdeinit)"
+DBUS_SESSION_BUS_ADDRESS="$(grep -z '^DBUS_SESSION_BUS_ADDRESS=' '/proc/'"${env_pid}"'/environ' | sed 's/DBUS_SESSION_BUS_ADDRESS=//')"
+DISPLAY="$(grep -z '^DISPLAY=' '/proc/'"${env_pid}"'/environ' | sed 's/DISPLAY=//')"
+export DBUS_SESSION_BUS_ADDRESS
+export DISPLAY

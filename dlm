@@ -1,19 +1,18 @@
 #!/bin/bash
+set -e
+set_display_preferences
 file=
 video_url=
-env_reference_process="$(pgrep -u $USER xfce4-session || pgrep -u $USER ciannamon-session || pgrep -u $USER gnome-session || pgrep -u $USER gnome-shell || pgrep -u $USER kdeinit)"
-export DBUS_SESSION_BUS_ADDRESS="$(cat /proc/"${env_reference_process}"/environ | grep -z ^DBUS_SESSION_BUS_ADDRESS= | sed s/DBUS_SESSION_BUS_ADDRESS=//)"
-export DISPLAY="$(cat /proc/"${env_reference_process}"/environ | grep -z ^DISPLAY= | sed s/DISPLAY=//)"
 function exit_error() {
-	case $1 in
+	case "${1}" in
 		0)
-			notify-send ~/"Music does not exist"
-			;;
-		1)
 			notify-send "Could not get YouTube URL"
 			;;
+		1)
+			notify-send "No devices found"
+			;;
 		2)
-			notify-send "youtube-dl could not download file"
+			notify-send 'youtube-dl failed to download' "$(xclip -o)"
 			;;
 		3)
 			notify-send "Could not find file in directory"
@@ -24,10 +23,15 @@ function exit_error() {
 	esac
 	exit 1
 }
-cd ~/Music || exit_error 0
+mkdir -p ~/Music
+cd ~/Music
 video_url="$(xclip -o | awk -F"=|&" '{print $2}')"
-[[ -z "${video_url}" ]] && exit_error 1
+[[ -z "${video_url}" ]] && exit_error 0
+mapfile -t dev_ids < <(kdeconnect-cli -l | awk '/reachable/{print $3}')
+[[ ${#dev_ids[@]} -eq 0 ]] && exit_error 1
 youtube-dl -x --audio-format vorbis "https://www.youtube.com/watch?v=${video_url}" || exit_error 2
 file="$(ls ./*"${video_url}."*)" || exit_error 3
-kdeconnect-cli -d ID --share "${file}" || exit_error 4
-notify-send "Sent ${file}"
+for dev_id in "${dev_ids[@]}"; do
+	kdeconnect-cli -d "${dev_id}" --share "${file}" || exit_error 4
+	notify-send 'Success' "Sent ${file} \\nto ${dev_id}"
+done
