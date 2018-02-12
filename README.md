@@ -34,6 +34,7 @@ Downloads music from YouTube using youtube-dl and sends the file directly to you
 - youtube-dl
 - kdeconnect
 - notify-send
+- set_display_preferences
 
 ##### Usage
 Select YouTube URL and run the script.
