@@ -4,4 +4,4 @@ words="$(xsel -o | wc -w)"
 characters="$(xsel -o | wc -m)"
 lines="$(xsel -o | wc -l)"
 ((lines++))
-notify-send "Word count" "${words} words\n${characters} characters\n${lines} lines"
+notify-send "Word count" "${words} words\\n${characters} characters\\n${lines} lines"
