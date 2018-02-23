@@ -1,0 +1,9 @@
+#!/bin/bash
+set_display_preferences
+mapfile -t old_ip < <(while dig +short whoami.akamai.net @ns1-1.akamaitech.net; do sleep 0.5; done)
+until new_ip="$(dig +short whoami.akamai.net @ns1-1.akamaitech.net)"; do sleep 0.5; done
+if [[ ${old_ip[-2]} == "${new_ip}"  ]]; then
+	notify-send "IP didn't change" "Old IP: ${old_ip[-2]}"
+else
+	notify-send "IP changed" "Old IP: ${old_ip[-2]}\\nNew IP: ${new_ip}"
+fi

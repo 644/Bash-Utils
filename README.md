@@ -28,6 +28,16 @@ Adds domain to vultr instance and optionally sets proper security headers. The D
 ```
 Run with root privileges.
 
+## check_ipaddr
+Notifies if the IP address changed after a network going down and back up.
+
+##### Dependencies
+- XFCE OR Gnome OR Cinnamon OR KDE
+- set_display_preferences
+
+##### Usage
+It is best used with a hotkey, otherwise just run it.
+
 ## dlm
 Downloads music from YouTube using youtube-dl and sends the file directly to your phone using kdeconnect. Works best with a hotkey.
 
