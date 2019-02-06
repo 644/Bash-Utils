@@ -48,6 +48,11 @@ command -v sqlite3 &>/dev/null || exit_error 99
 mkdir -p "${HOME}/Music" || exit_error 0
 cd "${HOME}/Music" || exit_error 0
 
+# Adds a list of connected and reachable devices listed by kdeconnect to an array
+# If none are found it exits
+mapfile -t dev_ids < <(kdeconnect-cli -l | awk '/reachable/{print $3}')
+(( ${#dev_ids[@]} == 0 )) && exit_error 2
+
 # Searches for a Youtube URL in the firefox cache files
 while read -r cache_file; do
     video_url="$(grep -aoE 'https://www.youtube.com/watch\?v=[a-zA-Z0-9_-]{11}' "${cache_file}" | grep -oP '[\w-]{11}')" && break
@@ -64,11 +69,6 @@ if [[ -z "${video_url}" ]]; then
     
     rm places-copy.sqlite
 fi
-
-# Adds a list of connected and reachable devices listed by kdeconnect to an array
-# If none are found it exits
-mapfile -t dev_ids < <(kdeconnect-cli -l | awk '/reachable/{print $3}')
-(( ${#dev_ids[@]} == 0 )) && exit_error 2
 
 # Downloads the video, converts to vorbis (.ogg) and attempts to find the downloaded vorbis file
 youtube-dl -x --audio-format vorbis "https://www.youtube.com/watch?v=${video_url}" &>/dev/null || exit_error 3
