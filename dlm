@@ -1,4 +1,5 @@
-#!/usr/bin/env -S bash -euo pipefail
+#!/bin/bash
+set -euo pipefail
 
 # Sets display variables for notify-send
 # User might vary depending on machine, check /etc/passwd
