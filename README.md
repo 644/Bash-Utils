@@ -1,6 +1,14 @@
 # Bash Utils
 Below you will find a description, example and dependency list for all scripts in this repository.
 
+## 0x0
+Uploads files to 0x0.st, reading arguments to the script as filenames, or if no filenames were given it will launch a GUI filepicker with Zenity. It will send a notification when finished, and copy the URL to the clipboard.
+
+##### Dependencies
+- zenity
+- notify-send
+- xclip
+
 ## btt
 Converts selected binary text to ascii and displays with notify-send.
 
