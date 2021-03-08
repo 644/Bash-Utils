@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+declare -xr -- DISPLAY=':0'
+declare -xr -- DBUS_SESSION_BUS_ADDRESS='unix:path=/run/user/1000/bus'
+declare -r -- up_file=${1:-$(zenity --file-selection)}
+
+err(){
+	if [[ -t 2 ]]; then
+		printf '"%q" -- %s\n' "${up_file}" "${1}" >&2
+	else
+		notify-send -t 5000 -- '0x0 Error' "\"${up_file@Q}\" -- ${1}"
+	fi
+	exit 1
+}
+
+[[ -f ${up_file} ]] || err 'not a file'
+[[ -r ${up_file} ]] || err 'not readable'
+[[ -s ${up_file} ]] || err 'is empty'
+
+if [[ -t 1 ]]; then
+	printf '"%q" -- uploading\n' "${up_file}"
+	curl --progress-bar -F"file=@${up_file}" https://0x0.st | xclip -f -rmlastnl -selection clipboard
+	printf '\n\nDone. Copied URL to clipboard.\n'
+else
+	url=$(curl -F"file=@${up_file}" https://0x0.st | xclip -f -rmlastnl -selection clipboard)
+	notify-send -t 5000 -- '0x0 Upload Complete' "Copied ${url@Q} to clipboard."
+fi
