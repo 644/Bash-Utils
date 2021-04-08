@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+batchipsearch(){
+    data=$(printf '{"query": "%s", "fields": "query,country,isp,mobile,proxy,hosting"},' "${iplist[@]}")
+    data="[${data::-1}]"
+    curl -s "http://ip-api.com/batch" --data "${data}" | jq -r '.[] | "IP: " + .query + ", Country: " + .country + ", ISP: " + .isp + ", isMobileNetwork: " + (.mobile|tostring) + ", isProxy: " + (.proxy|tostring) + ", isHost: " + (.hosting|tostring)'
+}
+
+iplist=()
+while IFS= read -r ip; do
+    ((count++ >= 100)) && { batchipsearch; count=0; iplist=(); }
+    iplist+=("${ip}")
+done < banned.txt
+
+batchipsearch
